@@ -107,9 +107,6 @@ def render_html(html, out):
 # ================= API =================
 
 
-@app.route("/")
-def home():
-    return "DM Image Generator is running! Use /generate to generate images."
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -134,6 +131,7 @@ def generate():
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
