@@ -84,24 +84,25 @@ def build_html(messages):
         w=WIDTH, h=HEIGHT, bubbles="\n".join(bubbles)
     )
 
-def render_html(html, out_path):
+def render_html(html_content, output_path):
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
             args=[
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu"
+                '--no-sandbox',
+                '--disable-setuid-sandbox', 
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--single-process',  # Render free tier needs this
+                '--no-zygote'
             ]
         )
-        page = browser.new_page(
-            viewport={"width": WIDTH, "height": HEIGHT}
-        )
-        page.set_content(html)
-        page.wait_for_timeout(500)
-        page.screenshot(path=out_path)
+        page = browser.new_page()
+        page.set_viewport_size({"width": WIDTH, "height": HEIGHT})
+        page.set_content(html_content)
+        page.screenshot(path=output_path, full_page=False)
         browser.close()
+
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -120,6 +121,7 @@ def generate():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
 
 
 
