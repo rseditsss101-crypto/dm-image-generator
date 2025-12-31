@@ -110,12 +110,18 @@ def home():
     return jsonify({"status": "DM Image Generator is running"}), 200
 
 @app.route("/generate", methods=["POST"])
+@app.route("/generate", methods=["POST"])
 def generate():
-    data = request.get_json(silent=True)
-    if not data or "script" not in data:
-        return jsonify({"error": "No script provided"}), 400
+    if not request.is_json:
+        return jsonify({"error": "Request must be JSON"}), 400
 
-    script = data["script"]
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Invalid JSON"}), 400
+
+    script = data.get("script")
+    if not script:
+        return jsonify({"error": "No script provided"}), 400
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -124,21 +130,16 @@ def generate():
         messages = parse_script(script)
         html = build_html(messages)
 
-        try:
-            render_html(html, str(img_path))
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+        render_html(html, str(img_path))
 
-        return send_file(
-            img_path,
-            mimetype="image/png",
-            as_attachment=False
-        )
+        return send_file(img_path, mimetype="image/png")
+
 
 # ================= START =================
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
 
 
 
