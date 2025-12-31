@@ -2,3 +2,4 @@ Flask
 gunicorn
 playwright
 pillow
+flask-cors
