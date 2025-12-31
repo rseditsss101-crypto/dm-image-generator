@@ -90,11 +90,15 @@ def render_html(html_content, output_path):
             headless=True,
             args=[
                 '--no-sandbox',
-                '--disable-setuid-sandbox', 
+                '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
                 '--disable-gpu',
-                '--single-process',  # Render free tier needs this
-                '--no-zygote'
+                '--disable-extensions',
+                '--single-process',
+                '--no-zygote',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding'
             ]
         )
         page = browser.new_page()
@@ -102,6 +106,7 @@ def render_html(html_content, output_path):
         page.set_content(html_content)
         page.screenshot(path=output_path, full_page=False)
         browser.close()
+
 
 
 @app.route("/generate", methods=["POST"])
@@ -121,6 +126,7 @@ def generate():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
+
 
 
 
