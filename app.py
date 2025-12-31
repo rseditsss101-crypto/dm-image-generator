@@ -6,8 +6,10 @@ from pathlib import Path
 from flask import Flask, request, send_file, jsonify
 from PIL import Image, ImageDraw
 from playwright.sync_api import sync_playwright
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # ================= CONFIG =================
 WIDTH = 1200
@@ -131,6 +133,7 @@ def generate():
 
 if __name__ == "__main__":
     app.run()
+
 
 
 
