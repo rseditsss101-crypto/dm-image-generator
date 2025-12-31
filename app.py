@@ -63,22 +63,11 @@ body {{
 
 # ================= HELPERS =================
 
-def apply_rounded_mask(src, dst, radius=20):
-    img = Image.open(src).convert("RGBA")
-    w, h = img.size
-
-    mask = Image.new("L", (w, h), 0)
-    draw = ImageDraw.Draw(mask)
-    draw.rounded_rectangle((0, 0, w, h), radius, fill=255)
-
-    out = Image.new("RGBA", (w, h))
-    out.paste(img, (0, 0), mask)
-    out.save(dst)
-
 def parse_script(text):
     msgs = []
     y = 50
     for line in text.splitlines():
+        line = line.strip()
         if line.startswith("R) "):
             msgs.append(("me", line[3:], y))
             y += 90
@@ -97,26 +86,36 @@ def build_html(messages):
         w=WIDTH, h=HEIGHT, bubbles="\n".join(bubbles)
     )
 
-def render_html(html, out):
+def render_html(html, out_path):
+    # ✅ RENDER-SAFE PLAYWRIGHT CONFIG (REQUIRED ON RENDER)
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu"
+            ],
+        )
         page = browser.new_page(viewport={"width": WIDTH, "height": HEIGHT})
-        page.set_content(html)
+        page.set_content(html, wait_until="networkidle")
         page.wait_for_timeout(300)
-        page.screenshot(path=out)
+        page.screenshot(path=out_path)
         browser.close()
 
 # ================= API =================
 
-
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"status": "DM Image Generator is running"}), 200
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    data = request.json
-    script = data.get("script")
-
-    if not script:
+    data = request.get_json(silent=True)
+    if not data or "script" not in data:
         return jsonify({"error": "No script provided"}), 400
+
+    script = data["script"]
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -125,14 +124,21 @@ def generate():
         messages = parse_script(script)
         html = build_html(messages)
 
-        render_html(html, str(img_path))
+        try:
+            render_html(html, str(img_path))
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
-        return send_file(img_path, mimetype="image/png")
+        return send_file(
+            img_path,
+            mimetype="image/png",
+            as_attachment=False
+        )
 
 # ================= START =================
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=10000)
 
 
 
